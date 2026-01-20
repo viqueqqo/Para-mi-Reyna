@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Para mi Reina Pepiada 🫓</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/lucide@latest/dist/lucide.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Playfair Display', serif; background-color: #f3f0ed; }
+        .font-handwriting { font-family: 'Dancing Script', cursive; }
+        
+        /* Animación de pasar página */
+        .page-enter { transform: translateX(100%); opacity: 0; }
+        .page-active { transform: translateX(0); opacity: 1; transition: all 0.5s ease-out; }
+        
+        /* Estilo de libro real */
+        .book-container {
+            perspective: 1500px;
+        }
+        .book-page {
+            background: #fffdfa;
+            box-shadow: inset 3px 0px 20px rgba(0,0,0,0.1), 10px 10px 20px rgba(0,0,0,0.1);
+            border-radius: 2px 15px 15px 2px;
+            min-height: 500px;
+        }
+        .spine {
+            width: 12px;
+            background: linear-gradient(90deg, #be123c 0%, #9f1239 50%, #be123c 100%);
+            box-shadow: 2px 0 5px rgba(0,0,0,0.2);
+        }
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="loader" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-rose-50 transition-opacity duration-1000">
+        <div class="animate-bounce mb-4"><i data-lucide="heart" class="w-16 h-16 text-rose-500 fill-rose-500"></i></div>
+        <p class="font-handwriting text-2xl text-rose-600">Abriendo tu libro, Hamina...</p>
+    </div>
+
+    <div class="fixed top-6 right-6 z-50">
+        <button id="music-btn" class="group flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-lg hover:scale-105 transition-all text-rose-500">
+            <i data-lucide="music" class="w-5 h-5"></i>
+            <span class="text-sm font-bold uppercase tracking-widest hidden md:block">Dale Play 🫓</span>
+        </button>
+    </div>
+    <div id="youtube-player" class="sr-only"></div>
+
+    <div class="book-container w-full max-w-4xl flex justify-center">
+        <div class="flex w-full max-w-lg md:max-w-2xl bg-white rounded-lg overflow-hidden shadow-2xl">
+            <div class="spine h-full hidden md:block"></div>
+            
+            <div id="book" class="book-page w-full p-8 md:p-12 relative flex flex-col justify-center items-center text-center">
+                <div id="page-content" class="w-full h-full flex flex-col items-center justify-center transition-all duration-500">
+                    </div>
+                
+                <div class="absolute bottom-6 w-full flex justify-between px-8 text-rose-400">
+                    <button id="prev-btn" class="hover:scale-125 transition-transform"><i data-lucide="arrow-left-circle"></i></button>
+                    <span id="page-number" class="text-xs font-bold tracking-tighter text-stone-300"></span>
+                    <button id="next-btn" class="hover:scale-125 transition-transform"><i data-lucide="arrow-right-circle"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="photo-input" class="sr-only" accept="image/*" />
+
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+        const bookData = [
+            { type: "cover", title: "Para mi Hamina", subtitle: "Nuestra historia en un libro", footer: "Toca la flecha para empezar", color: "bg-rose-50" },
+            { type: "text", title: "El Comienzo", content: "Nos conocimos de la forma más random en un juego, y terminaste siendo lo más importante de mi vida. Gracias por aparecer.", color: "bg-white" },
+            { type: "photo", title: "Mi Reina Pepiada", content: "Sube tu foto favorita aquí abajo.", color: "bg-stone-50" },
+            { type: "list", title: "Por qué eres única", items: ["Tu risa hermosa", "Cómo te preocupas por mí", "Tu inteligencia", "Eres mi lugar seguro"], color: "bg-white" },
+            { type: "message", title: "Mi Promesa", content: "No importa qué pase, siempre estaré aquí para ti. Te amo muchísimo.", footer: "Con amor, Abel", color: "bg-rose-50" }
+        ];
+
+        let currentPage = 0;
+        let localImage = localStorage.getItem('bookLocalImage');
+        let player;
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('youtube-player', {
+                height: '0', width: '0',
+                videoId: 'Fnz7jZuAtSM', // ID de Reina Pepiada - Alvaro Diaz
+                playerVars: { 'autoplay': 0, 'loop': 1, 'playlist': 'Fnz7jZuAtSM' }
+            });
+        }
+
+        function renderPage() {
+            const data = bookData[currentPage];
+            const content = document.getElementById('page-content');
+            const pageNum = document.getElementById('page-number');
+            
+            content.style.opacity = 0;
+            
+            setTimeout(() => {
+                pageNum.innerText = `PÁGINA ${currentPage + 1} DE ${bookData.length}`;
+                let html = "";
+
+                if (data.type === 'cover') {
+                    html = `<i data-lucide="book-open" class="w-16 h-16 text-rose-300 mb-6"></i>
+                            <h1 class="text-4xl md:text-6xl font-bold text-rose-900 mb-4">${data.title}</h1>
+                            <p class="text-xl text-stone-500 italic mb-10">${data.subtitle}</p>
+                            <span class="text-sm uppercase tracking-widest text-rose-300 animate-pulse">${data.footer}</span>`;
+                } else if (data.type === 'photo') {
+                    const img = localImage ? `<img src="${localImage}" class="w-full h-full object-cover">` : '<i data-lucide="camera" class="w-12 h-12 text-stone-200"></i>';
+                    html = `<h2 class="text-2xl font-bold text-stone-800 mb-6">${data.title}</h2>
+                            <div class="relative w-64 h-64 bg-white shadow-2xl p-2 border border-stone-100 rotate-2">
+                                <div class="w-full h-full bg-stone-50 overflow-hidden flex items-center justify-center">${img}</div>
+                                <label for="photo-input" class="absolute inset-0 cursor-pointer flex items-center justify-center bg-black/0 hover:bg-black/20 transition-all opacity-0 hover:opacity-100">
+                                    <i data-lucide="upload" class="text-white"></i>
+                                </label>
+                            </div>
+                            <p class="mt-8 text-sm italic text-stone-500">"${data.content}"</p>`;
+                } else if (data.type === 'text' || data.type === 'message') {
+                    html = `<h2 class="text-2xl font-bold text-rose-800 mb-8">${data.title}</h2>
+                            <p class="text-lg md:text-xl text-stone-700 leading-loose max-w-md">${data.content}</p>
+                            ${data.footer ? `<p class="font-handwriting text-3xl text-rose-600 mt-10">${data.footer}</p>` : ''}`;
+                } else if (data.type === 'list') {
+                    html = `<h2 class="text-2xl font-bold text-stone-800 mb-8">${data.title}</h2><div class="text-left space-y-4">`;
+                    data.items.forEach(it => { html += `<div class="flex items-center gap-3"><i data-lucide="check" class="text-rose-400 w-5"></i><span class="text-stone-600">${it}</span></div>`; });
+                    html += `</div>`;
+                }
+
+                content.innerHTML = html;
+                lucide.createIcons();
+                content.style.opacity = 1;
+            }, 300);
+        }
+
+        document.getElementById('music-btn').addEventListener('click', () => {
+            const state = player.getPlayerState();
+            if (state !== 1) {
+                player.playVideo();
+                document.getElementById('music-btn').classList.add('bg-rose-500', 'text-white', 'animate-pulse');
+            } else {
+                player.pauseVideo();
+                document.getElementById('music-btn').classList.remove('bg-rose-500', 'text-white', 'animate-pulse');
+            }
+        });
+
+        document.getElementById('next-btn').addEventListener('click', () => { if(currentPage < bookData.length - 1) { currentPage++; renderPage(); } });
+        document.getElementById('prev-btn').addEventListener('click', () => { if(currentPage > 0) { currentPage--; renderPage(); } });
+
+        document.getElementById('photo-input').addEventListener('change', (e) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => { localImage = ev.target.result; localStorage.setItem('bookLocalImage', localImage); renderPage(); };
+            reader.readAsDataURL(e.target.files[0]);
+        });
+
+        window.onload = () => {
+            renderPage();
+            setTimeout(() => { document.getElementById('loader').style.display = 'none'; }, 1500);
+        };
+    </script>
+</body>
+</html>
